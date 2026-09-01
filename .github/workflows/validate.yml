@@ -1,0 +1,35 @@
+name: Validate App
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check Python syntax
+        run: |
+          python -m py_compile app.py
+          python -m py_compile config.py
+          python -m py_compile src/file_processor.py
+          python -m py_compile src/llm_client.py
+          python -m py_compile src/prompt_templates.py
+          python -m py_compile src/analysis_engine.py
+          echo "✅ All files passed syntax check"
+
+      - name: Import check
+        run: |
+          python -c "import config; import src.file_processor; import src.llm_client; import src.prompt_templates; import src.analysis_engine; print('✅ All imports successful')"
