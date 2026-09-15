@@ -4,15 +4,14 @@ Each template function returns (system_prompt, user_prompt).
 """
 
 SYSTEM_PROMPT_BASE = """You are an IBM Consulting marketing intelligence analyst.
-Produce sharp, concise, executive-ready marketing intelligence.
+Produce executive-ready, evidence-led marketing intelligence that is detailed enough to be genuinely useful — not so long it wastes the reader's time.
 
-Non-negotiable rules:
-- Maximum 3–5 items per section. Never exceed this.
-- Every bullet must earn its place. No padding, no repetition, no filler.
-- Only use facts from the provided source documents. Cite source + page/section.
+Core rules:
+- Only use facts from the provided source documents. Cite source + page/section for every claim.
 - If evidence is unavailable, write: "Not found in uploaded sources."
 - Do not invent statistics, capabilities, or IBM credentials.
-- Use short sentences. Bullets over paragraphs. Tables where useful.
+- Use clear structure: headings, bullets, tables. Avoid walls of text.
+- Write in full sentences where explanation is needed. Use bullets for lists of parallel items.
 - Label all draft content: ⚠️ DRAFT — requires IBM editorial, legal, and brand review.
 """
 
@@ -38,17 +37,26 @@ def tab1_blog_ideas(transformation_priority, industry, geography, source_text):
     user = _context_block(transformation_priority, industry, geography, source_text) + """
 TASK — TAB 1: BLOG CONTENT IDEAS
 
-Generate exactly 3 blog post ideas. No more.
+Generate exactly 4 blog post ideas — 3 industry-specific and 1 broader generic idea.
 
-For each:
-- **Title** — use a number (e.g. "5 Ways…", "3 Reasons…") and make it specific to the industry
-- **Synopsis** — 2 sentences only
-- **Audience** — one line (job title / role)
-- **Key message** — one sentence
-- **Top 2 data points** — from sources only, cited
-- **CTA** — one line
+BLOGS 1–3: Industry-specific
+- Title must include a number (e.g. "5 Ways…", "3 Reasons…", "7 Signs…") and reference the selected industry or a relevant challenge within it.
 
-Total length per idea: 8 lines max.
+BLOG 4: Generic / broader appeal
+- Title should be broader — relevant to IBM Consulting's transformation priority as a whole, not tied to one industry. Still use a number in the title.
+
+For EACH of the 4 blogs provide:
+
+**Title:** [compelling, number-led title]
+**Synopsis:** 3–4 sentences explaining the angle, why it matters now, and what the reader will take away.
+**Target audience:** specific job title(s) or role(s)
+**Key message:** the single most important point the blog makes
+**Supporting data points:** 3 bullet points — cite source file + page/section for each. Only use data found in the uploaded documents.
+**IBM Consulting angle:** 2–3 sentences on how IBM Consulting is relevant to this topic
+**Call to action:** one clear next step for the reader
+**Recommended format:** (e.g. long-form thought-leadership, listicle, how-to guide, data-led essay)
+
+Separate each blog with a horizontal rule (---).
 """
     return system, user
 
@@ -61,16 +69,18 @@ def tab2_ibm_priorities(transformation_priority, industry, geography, source_tex
     user = _context_block(transformation_priority, industry, geography, source_text) + """
 TASK — TAB 2: IBM CONSULTING PRIORITIES
 
-List exactly 3–4 IBM Consulting priorities for this industry and geography. No more.
+Identify the top 4–5 IBM Consulting priorities at the intersection of the transformation priority, industry, and geography.
 
-For each — use this exact format:
-**Priority:** [name]
-**Problem:** [1 line — what client pain it solves]
-**Why now:** [1 line — urgency or market signal]
-**Message:** [1 sentence — what IBM Consulting should say]
-**Source:** [cite file + section]
+For each priority provide:
 
-Flag anything not in sources: "Recommendation — validate internally."
+**Priority name:**
+**Client problem:** 2–3 sentences describing the pain point or challenge this addresses.
+**Why it matters now:** 2–3 sentences on the urgency — market signal, regulatory driver, competitive pressure, or technology shift.
+**IBM Consulting differentiation:** what makes IBM Consulting's approach distinctive here (2–3 sentences). If not confirmed in sources, label: "Recommendation — validate internally."
+**Recommended message:** one punchy sentence IBM Consulting should lead with on this topic.
+**Supporting evidence:** cite source file + page/section.
+
+Separate each priority with a horizontal rule (---).
 """
     return system, user
 
@@ -83,15 +93,27 @@ def tab3_focus_areas(transformation_priority, industry, geography, source_text):
     user = _context_block(transformation_priority, industry, geography, source_text) + """
 TASK — TAB 3: FOCUS AREAS & MEETING AGENDA
 
-PART A — FOCUS AREAS (3 max)
-| Focus Area | Rationale | Marketing Action | Priority |
-|---|---|---|---|
-(fill the table — one row per area, keep each cell to 1 line)
+PART A — TOP FOCUS AREAS (3–4)
+For each focus area:
+**Focus area:** [name]
+**Business rationale:** 2–3 sentences — why this matters for IBM Consulting Marketing right now.
+**Target audience:** who to reach
+**Recommended marketing action:** specific, actionable (1–2 sentences)
+**Desired outcome:** what success looks like
+**Priority level:** Immediate / Near-term / Longer-term
+**Supporting evidence:** cite source
 
-PART B — MEETING AGENDA (60 min)
-| Time | Topic | Owner Role | Goal |
+Separate each focus area with (---).
+
+PART B — MEETING AGENDA
+A practical 60-minute marketing team meeting agenda:
+
+| Time | Topic | Owner Role | Objective |
 |---|---|---|---|
-5 rows max. End with 2 decisions required and 3 actions with owner + date.
+(5–6 rows)
+
+**Key decisions required:** (3 bullet points)
+**Actions, owners and target dates:** (4–5 bullet points in format: Action — Owner Role — Target Date)
 """
     return system, user
 
@@ -104,15 +126,24 @@ def tab4_social_media(transformation_priority, industry, geography, source_text)
     user = _context_block(transformation_priority, industry, geography, source_text) + """
 TASK — TAB 4: SOCIAL MEDIA CONTENT
 
-Generate exactly:
-A. 2 Executive thought-leadership posts (LinkedIn, 3–4 lines each)
-B. 2 IBM Consulting marketing posts (LinkedIn/Twitter, 3–4 lines each)
-C. 1 Poll (question + 4 options)
-D. 1 Carousel concept (title + 4 slide headlines only)
+Generate the following social content. For every post include: full draft copy, the data point or insight it is based on (cited from sources), suggested hashtags (3–5), and a suggested visual concept (1 line).
 
-For each post: draft copy, 1 data point from sources, 3–4 hashtags.
-Keep every post under 220 characters for Twitter compatibility.
-Label all: ⚠️ DRAFT — requires IBM editorial, legal, brand, and social-media review.
+A. EXECUTIVE THOUGHT-LEADERSHIP POSTS (2)
+LinkedIn format. 4–6 lines. Professional but human tone. Lead with an insight or provocation, not a product pitch.
+
+B. IBM CONSULTING MARKETING POSTS (2)
+LinkedIn/Twitter format. 3–5 lines. Focused on IBM Consulting's relevance and approach. Avoid superlatives.
+
+C. INDUSTRY COMMENTARY POST (1)
+React to a trend or finding from the uploaded sources. 3–4 lines.
+
+D. CAROUSEL CONCEPT (1)
+Title slide + 5 content slide headlines + 1 CTA slide headline.
+
+E. POLL (1)
+Question + 4 answer options. Include a brief note on why this poll topic is relevant.
+
+Label all content: ⚠️ DRAFT — requires IBM editorial, legal, brand, and social-media review.
 """
     return system, user
 
@@ -125,29 +156,33 @@ def tab5_emails(transformation_priority, industry, geography, source_text):
     user = _context_block(transformation_priority, industry, geography, source_text) + """
 TASK — TAB 5: EMAIL EXAMPLES
 
-Write 3 short, punchy emails — client, prospect, internal stakeholder.
+Write 3 complete, professional emails — client, prospect, and internal stakeholder.
 
-SUBJECT LINE RULES (apply to all 3):
+SUBJECT LINE RULES (apply to all 3 — this is critical):
 - Must include a specific number (e.g. "3 shifts", "72% of firms", "5 things")
-- Must create FOMO — fear of missing out, urgency, exclusivity
+- Must create FOMO — urgency, exclusivity, or fear of falling behind
 - Must be under 50 characters
-- Examples of the style to aim for:
+- Style examples to aim for:
   "3 AI moves your rivals made this quarter"
   "5 data gaps costing manufacturers now"
   "Only 12% of banks are ready — are you?"
+  "Your competitors moved on this. Have you?"
 
-Each email structure:
-- Subject line (follow rules above)
-- Pre-header (1 line, adds intrigue)
-- Opening (1 sentence — hook)
-- Body (2 short paragraphs, max 4 lines total)
-- 1 cited stat from sources
-- CTA (1 line, action-oriented)
-- Sign-off + [Name] | [Title] | IBM Consulting | [Region]
+Each email must include:
+**Subject:** [follow rules above]
+**Pre-header:** one line that adds intrigue and complements the subject
+**Opening:** 1–2 sentences — direct hook, no waffle
+**Body:** 3 short paragraphs (2–4 sentences each) covering: the challenge, what IBM Consulting sees/recommends, and why acting now matters
+**Key insight:** one cited stat or finding from the uploaded sources
+**Call to action:** one clear, specific next step
+**Sign-off:** warm close + [Name] | [Title] | IBM Consulting | [Region]
 
-Tone: direct, confident, no corporate fluff.
-Do NOT invent IBM credentials or client results.
-Label each: ⚠️ DRAFT — requires IBM editorial, legal, and brand review.
+Tone: confident, direct, executive-friendly. No corporate filler phrases.
+Do NOT invent IBM credentials, client results, partnerships, or commitments.
+
+Label each email: ⚠️ DRAFT — requires IBM editorial, legal, and brand review.
+
+Separate each email with (---).
 """
     return system, user
 
@@ -160,17 +195,21 @@ def tab6_industry_outlook(transformation_priority, industry, geography, source_t
     user = _context_block(transformation_priority, industry, geography, source_text) + """
 TASK — TAB 6: INDUSTRY DIRECTION & OUTLOOK
 
-CURRENT STATE — 4 bullets max: top drivers, biggest pressure, main barrier, #1 investment priority.
+SECTION A — CURRENT STATE
+Provide 6–8 bullets covering: key business drivers, client pressures, adoption barriers, investment priorities, regulatory considerations, and emerging risks. Cite sources throughout.
 
-OUTLOOK TABLE:
-| Horizon | Key Development | Signal from Sources | Confidence |
+SECTION B — STRUCTURED OUTLOOK
+Based only on evidence in the uploaded sources:
+
+| Horizon | Key Development | Evidence / Signal | Confidence |
 |---|---|---|---|
-| 0–12 months | | | |
-| 12–24 months | | | |
-| 24–36 months | | | |
+| 0–12 months | | | High / Medium / Low |
+| 12–24 months | | | High / Medium / Low |
+| 24–36 months | | | High / Medium / Low |
 
-3 rows only. Label inferred rows: "Scenario — validate."
-Cite all sources. No bullet lists outside the table.
+For each horizon also write 2–3 sentences of context explaining the development and its implications for IBM Consulting's clients.
+
+Label any inferred or extrapolated outlook as: "Scenario — requires validation."
 """
     return system, user
 
@@ -183,16 +222,22 @@ def tab7_trends(transformation_priority, industry, geography, source_text):
     user = _context_block(transformation_priority, industry, geography, source_text) + """
 TASK — TAB 7: INDUSTRY & TECHNOLOGY TRENDS
 
-Identify exactly 4–5 trends. Present as a table first, then brief notes.
+Identify 5–6 trends most relevant to the selected industry, transformation priority, and geography.
 
-SUMMARY TABLE:
-| # | Trend | Impact | Trajectory | IBM Implication |
+Start with a summary table:
+
+| # | Trend | Impact | Trajectory | Confidence |
 |---|---|---|---|---|
+(Impact: High / Medium / Emerging | Trajectory: Accelerating / Stable / Uncertain / Declining)
 
-Then for each trend — 3 lines only:
-- What it means for the industry (1 line)
-- Evidence (cite source)
-- What IBM Consulting should do about it (1 line)
+Then for each trend provide a detailed note:
+
+**Trend [#]: [Name]**
+**What it means:** 2–3 sentences describing the trend and why it matters in this industry context.
+**APAC / regional relevance:** 1–2 sentences specific to the selected geography.
+**Client implication:** what this means for IBM Consulting's clients (2–3 sentences).
+**IBM Consulting marketing implication:** how IBM Consulting should respond or position (1–2 sentences).
+**Evidence:** cite source file + page/section.
 """
     return system, user
 
@@ -205,17 +250,26 @@ def tab8_competitive(transformation_priority, industry, geography, source_text):
     user = _context_block(transformation_priority, industry, geography, source_text) + """
 TASK — TAB 8: COMPETITIVE INTELLIGENCE
 
-PART A — COMPETITOR TABLE (only competitors in sources or directly relevant)
-| Competitor | Positioning | Key Strength | Gap | Threat to IBM | Source |
-|---|---|---|---|---|---|
-Max 5 rows.
+PART A — COMPETITOR ANALYSIS
+Only analyse competitors mentioned in the uploaded sources or directly relevant to this transformation priority and industry.
 
-PART B — IBM POSITIONING (3 bullets only)
-- #1 differentiation theme
-- #1 white-space opportunity
-- #1 competitive message IBM should lead with
+For each competitor:
 
-Neutral, fact-based language only. No speculation.
+**Competitor:** [name]
+**Positioning:** 1–2 sentences on how they position in this space.
+**Key strengths:** 2–3 bullets (evidenced by sources only)
+**Potential gaps:** 1–2 bullets (evidenced by sources — do not speculate)
+**Threat level to IBM Consulting:** High / Medium / Low
+**Source:** cite file + section
+
+Separate each competitor with (---).
+
+PART B — IBM CONSULTING POSITIONING RECOMMENDATIONS
+- **Top differentiation themes** (3 bullets): what IBM Consulting can credibly claim that others cannot
+- **White-space opportunities** (2–3 bullets): areas where competitors are weak or absent
+- **Suggested competitive messages** (2–3 bullets): what IBM Consulting should say in market
+
+Use neutral, professional, fact-based language. Do not speculate about competitor strategy, financials, or customer relationships.
 """
     return system, user
 
@@ -228,28 +282,39 @@ def tab9_webinar_agenda(transformation_priority, industry, geography, source_tex
     user = _context_block(transformation_priority, industry, geography, source_text) + """
 TASK — TAB 9: WEBINAR AGENDA
 
-Design a 60-minute IBM Consulting webinar.
+Design a compelling 60-minute IBM Consulting webinar for senior leaders in the selected industry and geography.
 
-**TITLE** — use a number, create urgency, audience-facing (e.g. "3 AI Shifts Reshaping [Industry] in 2025")
-**Tagline** — 1 sentence
-**Audience** — job titles, 1 line
-**Objective** — 1 line
+**WEBINAR TITLE:** use a number and create urgency (e.g. "3 AI Shifts Reshaping [Industry] in 2025 — And How to Stay Ahead")
+**Tagline:** 1 sentence that sells the value of attending
+**Target audience:** specific job titles / seniority level
+**Webinar objective:** 2–3 sentences — what attendees will learn and why they should register
 
 AGENDA TABLE:
-| Time | Segment | Speaker Role | Key Point |
+| Time | Segment | Speaker Role | Key Points / Content |
 |---|---|---|---|
-| 0–5 min | Welcome | Host | |
-| 5–15 min | Market context | Industry Lead | use 1–2 stats from sources |
-| 15–30 min | IBM perspective | Practice Lead | |
-| 30–40 min | Case / demo | Solution Lead | |
-| 40–55 min | Panel Q&A | All | |
-| 55–60 min | Takeaways + CTA | Host | |
+| 0–5 min | Welcome & introductions | Host / MC | Set the scene, introduce speakers |
+| 5–15 min | Market context & challenge | Industry Lead | 2–3 key stats from uploaded sources; frame the burning problem |
+| 15–30 min | IBM Consulting perspective | Practice Lead | Our point of view, approach, and key recommendation |
+| 30–40 min | Client story / demo | Solution Lead | Walk through a relevant example or demonstration |
+| 40–55 min | Panel discussion & Q&A | All speakers | Open discussion |
+| 55–60 min | Key takeaways & next steps | Host / MC | 3 takeaways + CTA |
 
-PANEL DISCUSSION QUESTIONS (4 only, drawn from source insights)
+**PANEL DISCUSSION QUESTIONS** (5 questions — drawn directly from insights in the uploaded sources)
+1.
+2.
+3.
+4.
+5.
 
-PRE-WEBINAR POLL — 1 question, 4 options
+**PRE-WEBINAR POLL**
+Question: [question]
+Options: A) B) C) D)
+Why this poll: [1 sentence on why this question is relevant to the audience]
 
-POST-WEBINAR FOLLOW-UP — 3 bullets: what to send, when, to whom
+**POST-WEBINAR FOLLOW-UP PLAN**
+| Action | Content to Send | Timing | Audience |
+|---|---|---|---|
+(3–4 rows)
 
 Label: ⚠️ DRAFT — requires IBM editorial, legal, and brand review.
 """
@@ -262,7 +327,7 @@ Label: ⚠️ DRAFT — requires IBM editorial, legal, and brand review.
 def final_summary(transformation_priority, industry, geography, all_tab_outputs: dict):
     system = SYSTEM_PROMPT_BASE
     tabs_text = "\n\n".join(
-        f"=== {tab_name} ===\n{content[:2000]}"
+        f"=== {tab_name} ===\n{content[:2500]}"
         for tab_name, content in all_tab_outputs.items()
     )
     user = f"""
@@ -274,16 +339,29 @@ Geography: {geography}
 === DASHBOARD OUTPUTS ===
 {tabs_text}
 
-TASK — FINAL SUMMARY
+TASK — FINAL DASHBOARD SUMMARY
 
-Be ruthlessly concise. One line per item.
+Synthesise the dashboard into a concise, action-oriented executive summary.
 
-**TOP 3 STRATEGIC OPPORTUNITIES** (tab reference in brackets)
-**TOP 3 COMPETITIVE THREATS** (competitor name in brackets)
-**TOP 3 MARKETING ACTIONS** (role + deadline)
-**TOP 3 CAMPAIGN IDEAS** (format + audience + message in one line)
-**TOP 3 EXECUTIVE TALKING POINTS** (stat-led, board-ready)
-**2 CRITICAL EVIDENCE GAPS** (what's missing + what to do)
-**NEXT 3 STEPS** (action + owner role + when)
+**TOP 5 STRATEGIC OPPORTUNITIES**
+One sentence each. Include the tab it comes from in brackets.
+
+**TOP 5 COMPETITIVE CONSIDERATIONS**
+One sentence each. Include the competitor name in brackets where relevant.
+
+**TOP 5 RECOMMENDED MARKETING ACTIONS**
+Format: Action — Owner Role — Timing
+
+**TOP 5 CAMPAIGN IDEAS**
+Format: Campaign name — Format — Target audience — Core message
+
+**TOP 5 EXECUTIVE TALKING POINTS**
+Stat-led, board/C-suite ready. One sentence each.
+
+**KEY EVIDENCE GAPS**
+3–4 bullets: what information is missing and what research would address it.
+
+**RECOMMENDED NEXT STEPS**
+5 prioritised actions with owner role and suggested timing.
 """
     return system, user
