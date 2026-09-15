@@ -64,6 +64,7 @@ def run_full_analysis(
         ("Tab 6: Industry Direction & Outlook", pt.tab6_industry_outlook),
         ("Tab 7: Industry & Technology Trends", pt.tab7_trends),
         ("Tab 8: Competitive Intelligence", pt.tab8_competitive),
+        ("Tab 9: Webinar Agenda", pt.tab9_webinar_agenda),
     ]
 
     results = {}

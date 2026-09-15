@@ -4,6 +4,7 @@ Main Streamlit application.
 """
 
 import streamlit as st
+import markdown as md_lib
 from datetime import date
 from typing import List, Tuple
 
@@ -311,17 +312,21 @@ elif st.session_state.step == 2:
 # ──────────────────────────────────────────────────────────────────────────────
 elif st.session_state.step == 3:
     st.markdown("### <span class='step-indicator'>3</span> Select Industry", unsafe_allow_html=True)
-    st.markdown("Choose the industry that best describes your target market.")
+    st.markdown(
+        "Select one or more industries. "
+        "If multiple are selected, the analysis will cover all of them in combination."
+    )
 
-    selected_industry = st.radio(
-        "Industry",
+    selected_industries = st.multiselect(
+        "Industries",
         options=INDUSTRIES,
+        placeholder="Choose one or more industries…",
         label_visibility="collapsed",
     )
 
     custom_industry = ""
-    if selected_industry == "Other":
-        custom_industry = st.text_input("Please specify the industry or sector:")
+    if "Other" in selected_industries:
+        custom_industry = st.text_input("Please specify the 'Other' industry or sector:")
 
     col1, col2 = st.columns([1, 5])
     with col1:
@@ -330,10 +335,18 @@ elif st.session_state.step == 3:
             st.rerun()
     with col2:
         if st.button("Continue →", type="primary"):
-            if selected_industry == "Other" and not custom_industry.strip():
-                st.error("Please specify the industry name.")
+            if not selected_industries:
+                st.error("Please select at least one industry.")
+            elif "Other" in selected_industries and not custom_industry.strip():
+                st.error("Please specify the 'Other' industry name.")
             else:
-                st.session_state.industry = custom_industry.strip() if selected_industry == "Other" else selected_industry
+                # Replace "Other" placeholder with the custom name if provided
+                resolved = [
+                    custom_industry.strip() if ind == "Other" else ind
+                    for ind in selected_industries
+                ]
+                # Store as comma-separated string so the rest of the app is unchanged
+                st.session_state.industry = " & ".join(resolved)
                 st.session_state.step = 4
                 st.rerun()
 
@@ -463,7 +476,7 @@ elif st.session_state.step == 6:
         )
     else:
         st.markdown(
-            "The agent will now analyse your files across **8 dashboard tabs** and generate a "
+            "The agent will now analyse your files across **9 dashboard tabs** and generate a "
             "**Final Summary**. This may take 2–5 minutes depending on file size and API response times."
         )
 
@@ -538,6 +551,7 @@ elif st.session_state.step == 7:
         "Tab 6: Industry Direction & Outlook",
         "Tab 7: Industry & Technology Trends",
         "Tab 8: Competitive Intelligence",
+        "Tab 9: Webinar Agenda",
         "Final Summary",
     ]
 
@@ -550,6 +564,7 @@ elif st.session_state.step == 7:
         "🏭 Industry Outlook",
         "📈 Trends",
         "🔍 Competitive Intel",
+        "🎙️ Webinar Agenda",
         "⭐ Summary",
     ]
 
@@ -574,33 +589,110 @@ elif st.session_state.step == 7:
                 key=f"dl_{i}",
             )
 
-    # Download full report
+    # ── Export section ────────────────────────────────────────────────────────
     st.markdown("---")
-    full_report = f"""IBM Consulting Marketing Intelligence & Content Agent
-Dashboard Report
+    st.markdown("### ⬇ Export Dashboard")
+    ecol1, ecol2 = st.columns(2)
 
-Transformation Priority: {tp}
-Industry: {ind}
-Geography: {geo}
-Date: {date.today().strftime("%d %B %Y")}
-
-⚠️ DRAFT — All content requires IBM editorial, legal, brand, and communications review before use.
-
-{"=" * 80}
-
-"""
+    # ── TXT export ────────────────────────────────────────────────────────────
+    full_report = f"IBM Consulting Marketing Intelligence & Content Agent\nDashboard Report\n\nTransformation Priority: {tp}\nIndustry: {ind}\nGeography: {geo}\nDate: {date.today().strftime('%d %B %Y')}\n\n⚠️ DRAFT — All content requires IBM editorial, legal, brand, and communications review before use.\n\n{'=' * 80}\n"
     for key in tab_keys:
         full_report += f"\n\n{'=' * 80}\n{key}\n{'=' * 80}\n\n"
         full_report += results.get(key, "Not generated.")
         full_report += "\n"
 
-    st.download_button(
-        label="⬇ Download Full Dashboard Report (.txt)",
-        data=full_report,
-        file_name=f"IBM_Consulting_Dashboard_{ind.replace(' ', '_')}_{date.today().isoformat()}.txt",
-        mime="text/plain",
-        use_container_width=True,
-    )
+    with ecol1:
+        st.download_button(
+            label="⬇ Download as .txt",
+            data=full_report,
+            file_name=f"IBM_Consulting_Dashboard_{ind.replace(' ', '_')}_{date.today().isoformat()}.txt",
+            mime="text/plain",
+            use_container_width=True,
+        )
+
+    # ── HTML export ───────────────────────────────────────────────────────────
+    def build_html_export(tab_keys, tab_labels, results, tp, ind, geo):
+        today = date.today().strftime("%d %B %Y")
+        tab_icons = {k: l.split()[0] for k, l in zip(tab_keys, tab_labels)}
+
+        # Convert each tab's markdown to HTML
+        tab_sections = ""
+        for key, label in zip(tab_keys, tab_labels):
+            content_md = results.get(key, "")
+            try:
+                content_html = md_lib.markdown(
+                    content_md,
+                    extensions=["tables", "fenced_code"],
+                )
+            except Exception:
+                content_html = f"<pre>{content_md}</pre>"
+            tab_sections += f"""
+            <div class="tab-section">
+                <h2>{label}</h2>
+                <div class="tab-content">{content_html}</div>
+            </div>"""
+
+        return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IBM Consulting Marketing Intelligence Dashboard</title>
+<style>
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{ font-family: -apple-system, "Segoe UI", sans-serif; font-size: 14px; color: #161616; background: #fff; line-height: 1.6; }}
+  .header {{ background: linear-gradient(135deg, #0043CE 0%, #001D6C 100%); color: white; padding: 2rem 2.5rem; }}
+  .header h1 {{ font-size: 1.6rem; font-weight: 700; margin-bottom: 0.4rem; }}
+  .header p {{ opacity: 0.85; font-size: 0.95rem; }}
+  .meta {{ background: #F4F4F4; border-left: 4px solid #0043CE; padding: 1rem 1.5rem; margin: 1.5rem 2rem; font-size: 0.88rem; border-radius: 4px; }}
+  .meta strong {{ color: #0043CE; }}
+  .draft-banner {{ background: #FFF1F1; border: 1px solid #DA1E28; color: #DA1E28; font-size: 0.8rem; font-weight: 600; padding: 6px 16px; margin: 0 2rem 1.5rem; border-radius: 4px; display: inline-block; }}
+  .tab-section {{ border: 1px solid #E0E0E0; border-radius: 6px; margin: 1rem 2rem; overflow: hidden; }}
+  .tab-section h2 {{ background: #0043CE; color: white; padding: 0.75rem 1.25rem; font-size: 1rem; font-weight: 600; }}
+  .tab-content {{ padding: 1.25rem 1.5rem; }}
+  .tab-content h1, .tab-content h2, .tab-content h3 {{ color: #0043CE; margin: 1rem 0 0.4rem; font-size: 1rem; }}
+  .tab-content p {{ margin-bottom: 0.6rem; }}
+  .tab-content ul, .tab-content ol {{ padding-left: 1.4rem; margin-bottom: 0.6rem; }}
+  .tab-content li {{ margin-bottom: 0.25rem; }}
+  .tab-content table {{ width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.85rem; }}
+  .tab-content th {{ background: #E8EFFC; color: #0043CE; padding: 6px 10px; text-align: left; border: 1px solid #C6D6F5; }}
+  .tab-content td {{ padding: 6px 10px; border: 1px solid #E0E0E0; vertical-align: top; }}
+  .tab-content tr:nth-child(even) td {{ background: #F9FAFB; }}
+  .tab-content strong {{ color: #161616; }}
+  .tab-content code {{ background: #F4F4F4; padding: 1px 5px; border-radius: 3px; font-size: 0.85em; }}
+  .footer {{ text-align: center; color: #8a8a8a; font-size: 0.75rem; padding: 2rem; border-top: 1px solid #E0E0E0; margin-top: 2rem; }}
+  @media print {{ .tab-section {{ page-break-inside: avoid; }} }}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🔷 IBM Consulting Marketing Intelligence &amp; Content Agent</h1>
+  <p>AI-powered marketing analysis, insights, and content development</p>
+</div>
+<div class="meta">
+  <strong>Transformation Priority:</strong> {tp} &nbsp;|&nbsp;
+  <strong>Industry:</strong> {ind} &nbsp;|&nbsp;
+  <strong>Geography:</strong> {geo} &nbsp;|&nbsp;
+  <strong>Date:</strong> {today}
+</div>
+<div class="draft-banner">⚠️ DRAFT — All content requires IBM editorial, legal, brand, and communications review before use.</div>
+{tab_sections}
+<div class="footer">Generated by IBM Consulting Marketing Intelligence &amp; Content Agent &nbsp;·&nbsp; {today}</div>
+</body>
+</html>"""
+
+    html_export = build_html_export(tab_keys, tab_labels, results, tp, ind, geo)
+
+    with ecol2:
+        st.download_button(
+            label="⬇ Download as .html (shareable)",
+            data=html_export,
+            file_name=f"IBM_Consulting_Dashboard_{ind.replace(' ', '_')}_{date.today().isoformat()}.html",
+            mime="text/html",
+            use_container_width=True,
+        )
+
+    st.caption("The .html file preserves the full dashboard styling and can be opened in any browser or shared via email.")
 
     col1, col2 = st.columns([1, 5])
     with col1:
