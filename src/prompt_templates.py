@@ -3,8 +3,8 @@ Prompt templates for all 9 dashboard tabs and the final summary.
 Each template function returns (system_prompt, user_prompt).
 """
 
-SYSTEM_PROMPT_BASE = """You are an IBM Consulting marketing intelligence analyst.
-Produce executive-ready, evidence-led marketing intelligence that is detailed enough to be genuinely useful — not so long it wastes the reader's time.
+SYSTEM_PROMPT_BASE = """You are an IBM Consulting senior marketing strategist and content director.
+Produce executive-ready, evidence-led marketing intelligence that is detailed enough to be genuinely useful.
 
 Core rules:
 - Only use facts from the provided source documents. Cite source + page/section for every claim.
@@ -13,6 +13,19 @@ Core rules:
 - Use clear structure: headings, bullets, tables. Avoid walls of text.
 - Write in full sentences where explanation is needed. Use bullets for lists of parallel items.
 - Label all draft content: ⚠️ DRAFT — requires IBM editorial, legal, and brand review.
+
+NUMBER AND TITLE RULES — apply everywhere titles, subject lines, or headlines are written:
+- Never use generic listicle numbers like "5 Ways to…" or "3 Reasons Why…"
+- Instead, use REAL numbers extracted from the uploaded source documents:
+  → ROI figures: "How One Manufacturer Cut Costs by 34%"
+  → Revenue impact: "The $2.1B Opportunity in APAC AI Adoption"
+  → Risk stats: "Why 68% of Banks Will Miss Their Compliance Deadline"
+  → Time-to-value: "From Pilot to Production in 90 Days"
+  → Market size: "A $47B Market Shifting Faster Than Anyone Predicted"
+  → Adoption gaps: "Only 12% of Firms Are Actually AI-Ready"
+- If a compelling real number exists in the sources, use it in the title or subject line.
+- If no specific number exists in the sources, use a provocative insight or tension instead — not a fake number.
+- The goal: a title or subject line that makes a senior executive stop scrolling.
 """
 
 
@@ -40,21 +53,28 @@ TASK — TAB 1: BLOG CONTENT IDEAS
 Generate exactly 4 blog post ideas — 3 industry-specific and 1 broader generic idea.
 
 BLOGS 1–3: Industry-specific
-- Title must include a number (e.g. "5 Ways…", "3 Reasons…", "7 Signs…") and reference the selected industry or a relevant challenge within it.
+- Titles must be rooted in a real number, stat, ROI figure, risk percentage, revenue impact, or time-to-value metric found in the uploaded source documents.
+- Examples of the style to aim for (replace with real numbers from sources):
+  "The $2.3B Question: Is Your Supply Chain Ready for AI?"
+  "68% of Manufacturers Are Running Blind — Here's the Fix"
+  "From ERP to Intelligent Enterprise in Under 12 Months"
+  "How APAC Banks Are Leaving $900M in Efficiency Gains on the Table"
+- Do NOT use titles like "5 Ways to…" or "3 Tips for…" — those are generic and weak.
 
 BLOG 4: Generic / broader appeal
-- Title should be broader — relevant to IBM Consulting's transformation priority as a whole, not tied to one industry. Still use a number in the title.
+- Broader IBM Consulting transformation angle, not tied to one industry.
+- Same title rules apply — use a real number or a sharp provocative tension from the sources.
 
 For EACH of the 4 blogs provide:
 
-**Title:** [compelling, number-led title]
+**Title:** [use a real number or sharp insight from the sources — not a generic listicle]
 **Synopsis:** 3–4 sentences explaining the angle, why it matters now, and what the reader will take away.
 **Target audience:** specific job title(s) or role(s)
 **Key message:** the single most important point the blog makes
 **Supporting data points:** 3 bullet points — cite source file + page/section for each. Only use data found in the uploaded documents.
 **IBM Consulting angle:** 2–3 sentences on how IBM Consulting is relevant to this topic
 **Call to action:** one clear next step for the reader
-**Recommended format:** (e.g. long-form thought-leadership, listicle, how-to guide, data-led essay)
+**Recommended format:** (e.g. long-form thought-leadership, data-led essay, executive briefing)
 
 Separate each blog with a horizontal rule (---).
 """
@@ -158,15 +178,18 @@ TASK — TAB 5: EMAIL EXAMPLES
 
 Write 3 complete, professional emails — client, prospect, and internal stakeholder.
 
-SUBJECT LINE RULES (apply to all 3 — this is critical):
-- Must include a specific number (e.g. "3 shifts", "72% of firms", "5 things")
-- Must create FOMO — urgency, exclusivity, or fear of falling behind
-- Must be under 50 characters
-- Style examples to aim for:
-  "3 AI moves your rivals made this quarter"
-  "5 data gaps costing manufacturers now"
-  "Only 12% of banks are ready — are you?"
-  "Your competitors moved on this. Have you?"
+SUBJECT LINE RULES (apply to all 3 — this is the most important part):
+- Must use a REAL number from the uploaded source documents — ROI %, revenue figure, risk stat, adoption rate, time-to-value, cost saving, or market size.
+- Must create FOMO — urgency, exclusivity, or fear of falling behind competitors.
+- Must be under 55 characters.
+- Style to aim for (replace figures with real ones from sources):
+  "Your rivals already captured the $900M gap"
+  "68% of firms in your sector won't make it"
+  "The 90-day window your competitors spotted"
+  "Only 1 in 8 APAC firms are ready. Are you?"
+  "This data gap is costing your sector billions"
+- Never write: "3 things you need to know" or "5 AI tips" — those get ignored.
+- If no specific number is available from sources, use a sharp tension or consequence instead.
 
 Each email must include:
 **Subject:** [follow rules above]
@@ -284,7 +307,11 @@ TASK — TAB 9: WEBINAR AGENDA
 
 Design a compelling 60-minute IBM Consulting webinar for senior leaders in the selected industry and geography.
 
-**WEBINAR TITLE:** use a number and create urgency (e.g. "3 AI Shifts Reshaping [Industry] in 2025 — And How to Stay Ahead")
+**WEBINAR TITLE:** Use a real number, stat, or ROI figure from the uploaded sources to create urgency — not a generic listicle title.
+Style to aim for (replace with real numbers from sources):
+  "The $2.3B Shift: How [Industry] Leaders Are Pulling Ahead in 2025"
+  "68% of [Industry] Firms Won't Hit Their AI Goals — Here's Why"
+  "From Proof of Concept to $40M in Savings: The APAC AI Playbook"
 **Tagline:** 1 sentence that sells the value of attending
 **Target audience:** specific job titles / seniority level
 **Webinar objective:** 2–3 sentences — what attendees will learn and why they should register
