@@ -5,6 +5,7 @@ Main Streamlit application.
 
 import streamlit as st
 import markdown as md_lib
+import io
 from datetime import date
 from typing import List, Tuple
 
@@ -568,6 +569,127 @@ elif st.session_state.step == 7:
         "⭐ Summary",
     ]
 
+    # ── Helper: convert a single tab's markdown → single-tab HTML ────────────
+    def _tab_html_snippet(content_md, label, tp, ind, geo):
+        today = date.today().strftime("%d %B %Y")
+        try:
+            body_html = md_lib.markdown(content_md, extensions=["tables", "fenced_code"])
+        except Exception:
+            body_html = f"<pre>{content_md}</pre>"
+        return f"""<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{label} — IBM Consulting Dashboard</title>
+<style>
+  *{{box-sizing:border-box;margin:0;padding:0}}
+  body{{font-family:-apple-system,"Segoe UI",sans-serif;font-size:14px;color:#161616;background:#fff;line-height:1.6}}
+  .hdr{{background:linear-gradient(135deg,#0043CE,#001D6C);color:#fff;padding:1.5rem 2rem}}
+  .hdr h1{{font-size:1.3rem;font-weight:700;margin-bottom:.25rem}}
+  .hdr p{{opacity:.85;font-size:.88rem}}
+  .meta{{background:#F4F4F4;border-left:4px solid #0043CE;padding:.8rem 1.2rem;margin:1.2rem 1.5rem;font-size:.85rem;border-radius:4px}}
+  .meta strong{{color:#0043CE}}
+  .draft{{background:#FFF1F1;border:1px solid #DA1E28;color:#DA1E28;font-size:.78rem;font-weight:600;padding:5px 12px;margin:0 1.5rem .8rem;border-radius:4px;display:inline-block}}
+  .tab-hdr{{background:#0043CE;color:#fff;padding:.65rem 1.2rem;font-size:.95rem;font-weight:600;margin:1rem 1.5rem 0;border-radius:6px 6px 0 0}}
+  .content{{border:1px solid #E0E0E0;border-top:none;margin:0 1.5rem 1.5rem;padding:1.2rem 1.4rem;border-radius:0 0 6px 6px}}
+  .content h1,.content h2,.content h3{{color:#0043CE;margin:.8rem 0 .3rem;font-size:.95rem}}
+  .content p{{margin-bottom:.5rem}}
+  .content ul,.content ol{{padding-left:1.3rem;margin-bottom:.5rem}}
+  .content li{{margin-bottom:.2rem}}
+  .content table{{width:100%;border-collapse:collapse;margin:.6rem 0;font-size:.83rem}}
+  .content th{{background:#E8EFFC;color:#0043CE;padding:5px 9px;text-align:left;border:1px solid #C6D6F5}}
+  .content td{{padding:5px 9px;border:1px solid #E0E0E0;vertical-align:top}}
+  .content tr:nth-child(even) td{{background:#F9FAFB}}
+  .content strong{{color:#161616}}
+  .content code{{background:#F4F4F4;padding:1px 4px;border-radius:3px;font-size:.83em}}
+  .footer{{text-align:center;color:#8a8a8a;font-size:.72rem;padding:1.5rem;border-top:1px solid #E0E0E0;margin-top:1rem}}
+</style></head><body>
+<div class="hdr"><h1>🔷 IBM Consulting Marketing Intelligence &amp; Content Agent</h1>
+<p>{label}</p></div>
+<div class="meta"><strong>Priority:</strong> {tp} &nbsp;|&nbsp; <strong>Industry:</strong> {ind} &nbsp;|&nbsp; <strong>Geography:</strong> {geo} &nbsp;|&nbsp; <strong>Date:</strong> {today}</div>
+<div class="draft">⚠️ DRAFT — requires IBM editorial, legal, brand, and communications review before use.</div>
+<div class="tab-hdr">{label}</div>
+<div class="content">{body_html}</div>
+<div class="footer">IBM Consulting Marketing Intelligence &amp; Content Agent &nbsp;·&nbsp; {today}</div>
+</body></html>"""
+
+    # ── Helper: convert a single tab's markdown → Word (.docx) bytes ─────────
+    def _tab_docx_bytes(content_md, label, tp, ind, geo):
+        from docx import Document as DocxDocument
+        from docx.shared import Pt, RGBColor, Inches
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        doc = DocxDocument()
+        # Margins
+        for section in doc.sections:
+            section.top_margin = Inches(0.9)
+            section.bottom_margin = Inches(0.9)
+            section.left_margin = Inches(1.0)
+            section.right_margin = Inches(1.0)
+        # Header banner paragraph
+        hdr_p = doc.add_paragraph()
+        hdr_run = hdr_p.add_run("IBM Consulting Marketing Intelligence & Content Agent")
+        hdr_run.bold = True
+        hdr_run.font.size = Pt(16)
+        hdr_run.font.color.rgb = RGBColor(0x00, 0x43, 0xCE)
+        # Tab title
+        t = doc.add_heading(label, level=1)
+        t.runs[0].font.color.rgb = RGBColor(0x00, 0x43, 0xCE)
+        # Meta line
+        meta_p = doc.add_paragraph()
+        meta_p.add_run(f"Priority: ").bold = True
+        meta_p.add_run(f"{tp}   |   ")
+        meta_p.add_run("Industry: ").bold = True
+        meta_p.add_run(f"{ind}   |   ")
+        meta_p.add_run("Geography: ").bold = True
+        meta_p.add_run(f"{geo}   |   ")
+        meta_p.add_run("Date: ").bold = True
+        meta_p.add_run(date.today().strftime("%d %B %Y"))
+        meta_p.paragraph_format.space_after = Pt(4)
+        # Draft label
+        draft_p = doc.add_paragraph(
+            "⚠️ DRAFT — requires IBM editorial, legal, brand, and communications review before use."
+        )
+        draft_p.runs[0].font.color.rgb = RGBColor(0xDA, 0x1E, 0x28)
+        draft_p.runs[0].bold = True
+        doc.add_paragraph()  # spacer
+        # Content — render line by line
+        for line in content_md.split("\n"):
+            stripped = line.strip()
+            if not stripped:
+                doc.add_paragraph()
+                continue
+            if stripped.startswith("### "):
+                h = doc.add_heading(stripped[4:], level=3)
+                h.runs[0].font.color.rgb = RGBColor(0x00, 0x43, 0xCE)
+            elif stripped.startswith("## "):
+                h = doc.add_heading(stripped[3:], level=2)
+                h.runs[0].font.color.rgb = RGBColor(0x00, 0x43, 0xCE)
+            elif stripped.startswith("# "):
+                h = doc.add_heading(stripped[2:], level=1)
+                h.runs[0].font.color.rgb = RGBColor(0x00, 0x43, 0xCE)
+            elif stripped.startswith("- ") or stripped.startswith("* "):
+                p = doc.add_paragraph(style="List Bullet")
+                p.add_run(stripped[2:])
+            elif stripped.startswith("| "):
+                # table row — collect into paragraph for simplicity
+                cells = [c.strip() for c in stripped.strip("|").split("|")]
+                p = doc.add_paragraph("   ".join(cells))
+                p.paragraph_format.space_after = Pt(2)
+            elif stripped == "---":
+                doc.add_paragraph("─" * 60)
+            else:
+                # Handle **bold** inline
+                p = doc.add_paragraph()
+                parts = stripped.split("**")
+                for j, part in enumerate(parts):
+                    if part:
+                        run = p.add_run(part)
+                        run.bold = (j % 2 == 1)
+        buf = io.BytesIO()
+        doc.save(buf)
+        buf.seek(0)
+        return buf.getvalue()
+
+    # ── Render tabs ───────────────────────────────────────────────────────────
     tabs = st.tabs(tab_labels)
 
     for i, (tab_key, tab_obj) in enumerate(zip(tab_keys, tabs)):
@@ -580,119 +702,133 @@ elif st.session_state.step == 7:
             else:
                 st.markdown(content)
 
-            # Download button per tab
-            st.download_button(
-                label=f"⬇ Download {tab_labels[i]} as .txt",
-                data=content,
-                file_name=f"{tab_key.replace(' ', '_').replace(':', '')}.txt",
-                mime="text/plain",
-                key=f"dl_{i}",
-            )
+            if content and not content.startswith("❌"):
+                dl_col1, dl_col2 = st.columns(2)
+                safe_name = tab_key.replace(" ", "_").replace(":", "").replace("/", "_")
+                with dl_col1:
+                    st.download_button(
+                        label="⬇ Export as HTML",
+                        data=_tab_html_snippet(content, tab_labels[i], tp, ind, geo),
+                        file_name=f"{safe_name}.html",
+                        mime="text/html",
+                        key=f"dl_html_{i}",
+                        use_container_width=True,
+                    )
+                with dl_col2:
+                    st.download_button(
+                        label="⬇ Export as Word (.docx)",
+                        data=_tab_docx_bytes(content, tab_labels[i], tp, ind, geo),
+                        file_name=f"{safe_name}.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        key=f"dl_docx_{i}",
+                        use_container_width=True,
+                    )
 
-    # ── Export section ────────────────────────────────────────────────────────
+    # ── Export All — interactive tabbed HTML ─────────────────────────────────
     st.markdown("---")
-    st.markdown("### ⬇ Export Dashboard")
-    ecol1, ecol2 = st.columns(2)
+    st.markdown("### ⬇ Export Full Dashboard")
 
-    # ── TXT export ────────────────────────────────────────────────────────────
-    full_report = f"IBM Consulting Marketing Intelligence & Content Agent\nDashboard Report\n\nTransformation Priority: {tp}\nIndustry: {ind}\nGeography: {geo}\nDate: {date.today().strftime('%d %B %Y')}\n\n⚠️ DRAFT — All content requires IBM editorial, legal, brand, and communications review before use.\n\n{'=' * 80}\n"
-    for key in tab_keys:
-        full_report += f"\n\n{'=' * 80}\n{key}\n{'=' * 80}\n\n"
-        full_report += results.get(key, "Not generated.")
-        full_report += "\n"
-
-    with ecol1:
-        st.download_button(
-            label="⬇ Download as .txt",
-            data=full_report,
-            file_name=f"IBM_Consulting_Dashboard_{ind.replace(' ', '_')}_{date.today().isoformat()}.txt",
-            mime="text/plain",
-            use_container_width=True,
-        )
-
-    # ── HTML export ───────────────────────────────────────────────────────────
-    def build_html_export(tab_keys, tab_labels, results, tp, ind, geo):
+    def build_interactive_html(tab_keys, tab_labels, results, tp, ind, geo):
         today = date.today().strftime("%d %B %Y")
-        tab_icons = {k: l.split()[0] for k, l in zip(tab_keys, tab_labels)}
-
-        # Convert each tab's markdown to HTML
-        tab_sections = ""
-        for key, label in zip(tab_keys, tab_labels):
+        # Build tab nav buttons and panel content
+        nav_buttons = ""
+        panels = ""
+        for i, (key, label) in enumerate(zip(tab_keys, tab_labels)):
+            active = "active" if i == 0 else ""
+            nav_buttons += f'<button class="tab-btn {active}" onclick="showTab({i})" id="btn-{i}">{label}</button>\n'
             content_md = results.get(key, "")
             try:
-                content_html = md_lib.markdown(
-                    content_md,
-                    extensions=["tables", "fenced_code"],
-                )
+                content_html = md_lib.markdown(content_md, extensions=["tables", "fenced_code"])
             except Exception:
                 content_html = f"<pre>{content_md}</pre>"
-            tab_sections += f"""
-            <div class="tab-section">
-                <h2>{label}</h2>
-                <div class="tab-content">{content_html}</div>
-            </div>"""
+            display = "block" if i == 0 else "none"
+            panels += f'<div class="panel" id="panel-{i}" style="display:{display}">{content_html}</div>\n'
 
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>IBM Consulting Marketing Intelligence Dashboard</title>
 <style>
-  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-  body {{ font-family: -apple-system, "Segoe UI", sans-serif; font-size: 14px; color: #161616; background: #fff; line-height: 1.6; }}
-  .header {{ background: linear-gradient(135deg, #0043CE 0%, #001D6C 100%); color: white; padding: 2rem 2.5rem; }}
-  .header h1 {{ font-size: 1.6rem; font-weight: 700; margin-bottom: 0.4rem; }}
-  .header p {{ opacity: 0.85; font-size: 0.95rem; }}
-  .meta {{ background: #F4F4F4; border-left: 4px solid #0043CE; padding: 1rem 1.5rem; margin: 1.5rem 2rem; font-size: 0.88rem; border-radius: 4px; }}
-  .meta strong {{ color: #0043CE; }}
-  .draft-banner {{ background: #FFF1F1; border: 1px solid #DA1E28; color: #DA1E28; font-size: 0.8rem; font-weight: 600; padding: 6px 16px; margin: 0 2rem 1.5rem; border-radius: 4px; display: inline-block; }}
-  .tab-section {{ border: 1px solid #E0E0E0; border-radius: 6px; margin: 1rem 2rem; overflow: hidden; }}
-  .tab-section h2 {{ background: #0043CE; color: white; padding: 0.75rem 1.25rem; font-size: 1rem; font-weight: 600; }}
-  .tab-content {{ padding: 1.25rem 1.5rem; }}
-  .tab-content h1, .tab-content h2, .tab-content h3 {{ color: #0043CE; margin: 1rem 0 0.4rem; font-size: 1rem; }}
-  .tab-content p {{ margin-bottom: 0.6rem; }}
-  .tab-content ul, .tab-content ol {{ padding-left: 1.4rem; margin-bottom: 0.6rem; }}
-  .tab-content li {{ margin-bottom: 0.25rem; }}
-  .tab-content table {{ width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.85rem; }}
-  .tab-content th {{ background: #E8EFFC; color: #0043CE; padding: 6px 10px; text-align: left; border: 1px solid #C6D6F5; }}
-  .tab-content td {{ padding: 6px 10px; border: 1px solid #E0E0E0; vertical-align: top; }}
-  .tab-content tr:nth-child(even) td {{ background: #F9FAFB; }}
-  .tab-content strong {{ color: #161616; }}
-  .tab-content code {{ background: #F4F4F4; padding: 1px 5px; border-radius: 3px; font-size: 0.85em; }}
-  .footer {{ text-align: center; color: #8a8a8a; font-size: 0.75rem; padding: 2rem; border-top: 1px solid #E0E0E0; margin-top: 2rem; }}
-  @media print {{ .tab-section {{ page-break-inside: avoid; }} }}
+  *{{box-sizing:border-box;margin:0;padding:0}}
+  body{{font-family:-apple-system,"Segoe UI",sans-serif;font-size:14px;color:#161616;background:#f4f4f4;line-height:1.6}}
+  /* Header */
+  .hdr{{background:linear-gradient(135deg,#0043CE 0%,#001D6C 100%);color:#fff;padding:1.8rem 2.5rem}}
+  .hdr h1{{font-size:1.5rem;font-weight:700;margin-bottom:.3rem}}
+  .hdr p{{opacity:.85;font-size:.92rem}}
+  /* Meta bar */
+  .meta{{background:#fff;border-left:4px solid #0043CE;padding:.9rem 1.5rem;margin:1.2rem 1.5rem;font-size:.85rem;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.06)}}
+  .meta strong{{color:#0043CE}}
+  /* Draft banner */
+  .draft{{background:#FFF1F1;border:1px solid #DA1E28;color:#DA1E28;font-size:.78rem;font-weight:600;padding:5px 14px;margin:0 1.5rem .8rem;border-radius:4px;display:inline-block}}
+  /* Tab nav */
+  .tab-nav{{display:flex;flex-wrap:wrap;gap:4px;padding:.8rem 1.5rem;background:#fff;border-bottom:2px solid #E0E0E0;position:sticky;top:0;z-index:100;box-shadow:0 2px 6px rgba(0,0,0,.07)}}
+  .tab-btn{{background:#F4F4F4;border:1px solid #E0E0E0;color:#525252;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:.8rem;font-weight:600;transition:all .15s}}
+  .tab-btn:hover{{background:#E8EFFC;color:#0043CE;border-color:#C6D6F5}}
+  .tab-btn.active{{background:#0043CE;color:#fff;border-color:#0043CE}}
+  /* Panel */
+  .panel-wrap{{padding:1.2rem 1.5rem}}
+  .panel{{background:#fff;border:1px solid #E0E0E0;border-radius:6px;padding:1.5rem 1.8rem;box-shadow:0 1px 4px rgba(0,0,0,.05)}}
+  /* Content */
+  .panel h1,.panel h2,.panel h3{{color:#0043CE;margin:1rem 0 .4rem}}
+  .panel h1{{font-size:1.15rem}}.panel h2{{font-size:1rem}}.panel h3{{font-size:.93rem}}
+  .panel p{{margin-bottom:.55rem}}
+  .panel ul,.panel ol{{padding-left:1.4rem;margin-bottom:.55rem}}
+  .panel li{{margin-bottom:.2rem}}
+  .panel table{{width:100%;border-collapse:collapse;margin:.7rem 0;font-size:.84rem}}
+  .panel th{{background:#E8EFFC;color:#0043CE;padding:7px 10px;text-align:left;border:1px solid #C6D6F5;font-weight:600}}
+  .panel td{{padding:7px 10px;border:1px solid #E0E0E0;vertical-align:top}}
+  .panel tr:nth-child(even) td{{background:#FAFBFF}}
+  .panel strong{{color:#161616}}
+  .panel em{{color:#525252}}
+  .panel code{{background:#F4F4F4;padding:1px 5px;border-radius:3px;font-size:.83em;font-family:monospace}}
+  .panel hr{{border:none;border-top:1px solid #E0E0E0;margin:1rem 0}}
+  .panel blockquote{{border-left:3px solid #0043CE;padding:.4rem .8rem;background:#F4F8FF;margin:.5rem 0;color:#525252}}
+  /* Footer */
+  .footer{{text-align:center;color:#8a8a8a;font-size:.72rem;padding:1.5rem;border-top:1px solid #E0E0E0;margin-top:1rem;background:#fff}}
 </style>
 </head>
 <body>
-<div class="header">
+<div class="hdr">
   <h1>🔷 IBM Consulting Marketing Intelligence &amp; Content Agent</h1>
   <p>AI-powered marketing analysis, insights, and content development</p>
 </div>
 <div class="meta">
-  <strong>Transformation Priority:</strong> {tp} &nbsp;|&nbsp;
-  <strong>Industry:</strong> {ind} &nbsp;|&nbsp;
-  <strong>Geography:</strong> {geo} &nbsp;|&nbsp;
+  <strong>Transformation Priority:</strong> {tp} &nbsp;&nbsp;|&nbsp;&nbsp;
+  <strong>Industry:</strong> {ind} &nbsp;&nbsp;|&nbsp;&nbsp;
+  <strong>Geography:</strong> {geo} &nbsp;&nbsp;|&nbsp;&nbsp;
   <strong>Date:</strong> {today}
 </div>
-<div class="draft-banner">⚠️ DRAFT — All content requires IBM editorial, legal, brand, and communications review before use.</div>
-{tab_sections}
+<div class="draft">⚠️ DRAFT — All content requires IBM editorial, legal, brand, and communications review before use.</div>
+<div class="tab-nav">
+{nav_buttons}
+</div>
+<div class="panel-wrap">
+{panels}
+</div>
 <div class="footer">Generated by IBM Consulting Marketing Intelligence &amp; Content Agent &nbsp;·&nbsp; {today}</div>
+<script>
+function showTab(n) {{
+  document.querySelectorAll('.panel').forEach(function(p){{p.style.display='none';}});
+  document.querySelectorAll('.tab-btn').forEach(function(b){{b.classList.remove('active');}});
+  document.getElementById('panel-'+n).style.display='block';
+  document.getElementById('btn-'+n).classList.add('active');
+  window.scrollTo({{top:0,behavior:'smooth'}});
+}}
+</script>
 </body>
 </html>"""
 
-    html_export = build_html_export(tab_keys, tab_labels, results, tp, ind, geo)
-
-    with ecol2:
-        st.download_button(
-            label="⬇ Download as .html (shareable)",
-            data=html_export,
-            file_name=f"IBM_Consulting_Dashboard_{ind.replace(' ', '_')}_{date.today().isoformat()}.html",
-            mime="text/html",
-            use_container_width=True,
-        )
-
-    st.caption("The .html file preserves the full dashboard styling and can be opened in any browser or shared via email.")
+    interactive_html = build_interactive_html(tab_keys, tab_labels, results, tp, ind, geo)
+    st.download_button(
+        label="⬇ Export Full Dashboard — Interactive HTML (all tabs, shareable)",
+        data=interactive_html,
+        file_name=f"IBM_Consulting_Dashboard_{ind.replace(' ', '_')}_{date.today().isoformat()}.html",
+        mime="text/html",
+        use_container_width=True,
+    )
+    st.caption("Opens in any browser. All tabs are clickable — no internet connection required.")
 
     col1, col2 = st.columns([1, 5])
     with col1:
