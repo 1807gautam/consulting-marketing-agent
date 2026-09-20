@@ -82,60 +82,53 @@ Separate each blog with a horizontal rule (---).
 
 
 # ─────────────────────────────────────────────
-# TAB 2: IBM Consulting Priorities
+# TAB 2+3 MERGED: IBM Priorities & Focus Areas
 # ─────────────────────────────────────────────
 def tab2_ibm_priorities(transformation_priority, industry, geography, source_text):
     system = SYSTEM_PROMPT_BASE
     user = _context_block(transformation_priority, industry, geography, source_text) + """
-TASK — TAB 2: IBM CONSULTING PRIORITIES
+TASK — IBM CONSULTING PRIORITIES & MARKETING FOCUS AREAS
 
-Identify the top 4–5 IBM Consulting priorities at the intersection of the transformation priority, industry, and geography.
+PART A — IBM CONSULTING PRIORITIES (4–5)
+What IBM Consulting stands for in this space — outward-facing strategic positioning.
 
-For each priority provide:
-
+For each priority:
 **Priority name:**
-**Client problem:** 2–3 sentences describing the pain point or challenge this addresses.
-**Why it matters now:** 2–3 sentences on the urgency — market signal, regulatory driver, competitive pressure, or technology shift.
-**IBM Consulting differentiation:** what makes IBM Consulting's approach distinctive here (2–3 sentences). If not confirmed in sources, label: "Recommendation — validate internally."
-**Recommended message:** one punchy sentence IBM Consulting should lead with on this topic.
+**Client problem:** 2–3 sentences on the pain point this addresses.
+**Why it matters now:** 2–3 sentences on urgency — market signal, regulatory driver, competitive pressure, or technology shift.
+**IBM Consulting differentiation:** what makes IBM's approach distinctive (2–3 sentences). Label unconfirmed items: "Recommendation — validate internally."
+**Recommended message:** one punchy sentence IBM should lead with.
 **Supporting evidence:** cite source file + page/section.
 
-Separate each priority with a horizontal rule (---).
-"""
-    return system, user
+Separate each priority with (---).
 
+PART B — MARKETING FOCUS AREAS & MEETING AGENDA
+What the IBM Consulting Marketing team should action — internal-facing tactical plan.
 
-# ─────────────────────────────────────────────
-# TAB 3: Focus Areas & Meeting Agenda
-# ─────────────────────────────────────────────
-def tab3_focus_areas(transformation_priority, industry, geography, source_text):
-    system = SYSTEM_PROMPT_BASE
-    user = _context_block(transformation_priority, industry, geography, source_text) + """
-TASK — TAB 3: FOCUS AREAS & MEETING AGENDA
-
-PART A — TOP FOCUS AREAS (3–4)
-For each focus area:
+FOCUS AREAS (3–4):
 **Focus area:** [name]
 **Business rationale:** 2–3 sentences — why this matters for IBM Consulting Marketing right now.
-**Target audience:** who to reach
+**Target audience:** specific roles to reach
 **Recommended marketing action:** specific, actionable (1–2 sentences)
 **Desired outcome:** what success looks like
 **Priority level:** Immediate / Near-term / Longer-term
-**Supporting evidence:** cite source
 
 Separate each focus area with (---).
 
-PART B — MEETING AGENDA
-A practical 60-minute marketing team meeting agenda:
-
+MEETING AGENDA — 60 minutes:
 | Time | Topic | Owner Role | Objective |
 |---|---|---|---|
 (5–6 rows)
 
 **Key decisions required:** (3 bullet points)
-**Actions, owners and target dates:** (4–5 bullet points in format: Action — Owner Role — Target Date)
+**Actions, owners and target dates:** (4–5 bullets: Action — Owner Role — Target Date)
 """
     return system, user
+
+
+# Keep tab3 as alias so analysis engine import doesn't break
+def tab3_focus_areas(transformation_priority, industry, geography, source_text):
+    return tab2_ibm_priorities(transformation_priority, industry, geography, source_text)
 
 
 # ─────────────────────────────────────────────
@@ -211,15 +204,15 @@ Separate each email with (---).
 
 
 # ─────────────────────────────────────────────
-# TAB 6: Industry Direction & Outlook
+# TAB 6+7 MERGED: Industry Outlook & Trends
 # ─────────────────────────────────────────────
 def tab6_industry_outlook(transformation_priority, industry, geography, source_text):
     system = SYSTEM_PROMPT_BASE
     user = _context_block(transformation_priority, industry, geography, source_text) + """
-TASK — TAB 6: INDUSTRY DIRECTION & OUTLOOK
+TASK — INDUSTRY OUTLOOK & TRENDS
 
 SECTION A — CURRENT STATE
-Provide 6–8 bullets covering: key business drivers, client pressures, adoption barriers, investment priorities, regulatory considerations, and emerging risks. Cite sources throughout.
+6–8 bullets covering: key business drivers, client pressures, adoption barriers, investment priorities, regulatory considerations, emerging risks. Cite sources throughout.
 
 SECTION B — STRUCTURED OUTLOOK
 Based only on evidence in the uploaded sources:
@@ -230,39 +223,31 @@ Based only on evidence in the uploaded sources:
 | 12–24 months | | | High / Medium / Low |
 | 24–36 months | | | High / Medium / Low |
 
-For each horizon also write 2–3 sentences of context explaining the development and its implications for IBM Consulting's clients.
+For each horizon write 2–3 sentences of context on implications for IBM Consulting's clients.
+Label inferred outlook: "Scenario — requires validation."
 
-Label any inferred or extrapolated outlook as: "Scenario — requires validation."
-"""
-    return system, user
+SECTION C — KEY TRENDS
+5–6 trends most relevant to the selected industry, transformation priority, and geography.
 
-
-# ─────────────────────────────────────────────
-# TAB 7: Industry & Technology Trends
-# ─────────────────────────────────────────────
-def tab7_trends(transformation_priority, industry, geography, source_text):
-    system = SYSTEM_PROMPT_BASE
-    user = _context_block(transformation_priority, industry, geography, source_text) + """
-TASK — TAB 7: INDUSTRY & TECHNOLOGY TRENDS
-
-Identify 5–6 trends most relevant to the selected industry, transformation priority, and geography.
-
-Start with a summary table:
-
+Summary table first:
 | # | Trend | Impact | Trajectory | Confidence |
 |---|---|---|---|---|
 (Impact: High / Medium / Emerging | Trajectory: Accelerating / Stable / Uncertain / Declining)
 
-Then for each trend provide a detailed note:
-
+Then for each trend:
 **Trend [#]: [Name]**
-**What it means:** 2–3 sentences describing the trend and why it matters in this industry context.
+**What it means:** 2–3 sentences in this industry context.
 **APAC / regional relevance:** 1–2 sentences specific to the selected geography.
-**Client implication:** what this means for IBM Consulting's clients (2–3 sentences).
-**IBM Consulting marketing implication:** how IBM Consulting should respond or position (1–2 sentences).
+**Client implication:** 2–3 sentences on what this means for IBM Consulting's clients.
+**IBM Consulting marketing implication:** 1–2 sentences on how IBM should respond or position.
 **Evidence:** cite source file + page/section.
 """
     return system, user
+
+
+# Keep tab7 as alias so engine import doesn't break
+def tab7_trends(transformation_priority, industry, geography, source_text):
+    return tab6_industry_outlook(transformation_priority, industry, geography, source_text)
 
 
 # ─────────────────────────────────────────────

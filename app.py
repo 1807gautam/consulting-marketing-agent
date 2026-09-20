@@ -542,31 +542,27 @@ elif st.session_state.step == 7:
         unsafe_allow_html=True,
     )
 
-    # Tabs
+    # Tabs — displayed in the user-requested order
     tab_keys = [
-        "Tab 1: Blog Content Ideas",
-        "Tab 2: IBM Consulting Priorities",
-        "Tab 3: Focus Areas & Meeting Agenda",
-        "Tab 4: Social Media Content",
-        "Tab 5: Email Examples",
-        "Tab 6: Industry Direction & Outlook",
-        "Tab 7: Industry & Technology Trends",
-        "Tab 8: Competitive Intelligence",
-        "Tab 9: Webinar Agenda",
         "Final Summary",
+        "Industry Outlook & Trends",
+        "Social Media Content",
+        "Blog Content Ideas",
+        "Webinar Agenda",
+        "Email Examples",
+        "Competitive Intelligence",
+        "IBM Priorities & Focus Areas",
     ]
 
     tab_labels = [
-        "📝 Blog Ideas",
-        "🎯 IBM Priorities",
-        "📋 Focus Areas",
-        "📱 Social Media",
-        "📧 Emails",
-        "🏭 Industry Outlook",
-        "📈 Trends",
-        "🔍 Competitive Intel",
-        "🎙️ Webinar Agenda",
         "⭐ Summary",
+        "🏭 Industry Outlook & Trends",
+        "📱 Social Media",
+        "📝 Blog Ideas",
+        "🎙️ Webinar Agenda",
+        "📧 Emails",
+        "🔍 Competitive Intel",
+        "🎯 IBM Priorities & Focus Areas",
     ]
 
     # ── Helper: convert a single tab's markdown → single-tab HTML ────────────

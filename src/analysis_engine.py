@@ -56,21 +56,22 @@ def run_full_analysis(
     combined_text = _combine_sources(all_file_texts)
 
     tab_functions = [
-        ("Tab 1: Blog Content Ideas", pt.tab1_blog_ideas),
-        ("Tab 2: IBM Consulting Priorities", pt.tab2_ibm_priorities),
-        ("Tab 3: Focus Areas & Meeting Agenda", pt.tab3_focus_areas),
-        ("Tab 4: Social Media Content", pt.tab4_social_media),
-        ("Tab 5: Email Examples", pt.tab5_emails),
-        ("Tab 6: Industry Direction & Outlook", pt.tab6_industry_outlook),
-        ("Tab 7: Industry & Technology Trends", pt.tab7_trends),
-        ("Tab 8: Competitive Intelligence", pt.tab8_competitive),
-        ("Tab 9: Webinar Agenda", pt.tab9_webinar_agenda),
+        ("Final Summary",              None),                          # placeholder — filled after
+        ("Industry Outlook & Trends",  pt.tab6_industry_outlook),
+        ("Social Media Content",       pt.tab4_social_media),
+        ("Blog Content Ideas",         pt.tab1_blog_ideas),
+        ("Webinar Agenda",             pt.tab9_webinar_agenda),
+        ("Email Examples",             pt.tab5_emails),
+        ("Competitive Intelligence",   pt.tab8_competitive),
+        ("IBM Priorities & Focus Areas", pt.tab2_ibm_priorities),
     ]
 
     results = {}
-    total = len(tab_functions) + 1  # +1 for summary
+    # tabs that need LLM calls (exclude the Summary placeholder)
+    runnable = [(name, fn) for name, fn in tab_functions if fn is not None]
+    total = len(runnable) + 1  # +1 for summary
 
-    for i, (tab_name, tab_fn) in enumerate(tab_functions):
+    for i, (tab_name, tab_fn) in enumerate(runnable):
         if progress_callback:
             progress_callback(i / total, f"Analysing: {tab_name}...")
 
