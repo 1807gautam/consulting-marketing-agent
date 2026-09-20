@@ -1,7 +1,7 @@
 """
 IBM Consulting AI (ICA) API client.
 Endpoint: https://api.nextgen-beta.ica.ibm.com/ica/v1
-Model:    claude-sonnet-4-5
+Model:    gpt-5.5-gus (ICA Codex key — Claude/Bedrock unavailable)
 Supports the OpenAI-compatible /chat/completions endpoint.
 """
 
@@ -13,44 +13,63 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _get_config(key: str, default: str = "") -> str:
+    """
+    Read a config value from (in priority order):
+      1. Environment variable / .env file
+      2. Streamlit secrets (st.secrets) — available on Streamlit Cloud
+      3. Provided default
+    """
+    val = os.getenv(key, "")
+    if val:
+        return val
+    # Try Streamlit secrets (only available when running inside Streamlit)
+    try:
+        import streamlit as st
+        val = st.secrets.get(key, "")
+        if val:
+            return str(val)
+    except Exception:
+        pass
+    return default
+
+
 class ICAClient:
     """
     Client for IBM Consulting AI (ICA) nextgen-beta API.
-    Environment variables (all read from .env or Streamlit secrets):
-      ICA_API_KEY   — Bearer token
-      ICA_BASE_URL  — Base URL (no trailing slash)
-      ICA_MODEL     — Model identifier
-      ICA_MAX_TOKENS — Max output tokens (default 8192)
-      ICA_TEMPERATURE — Generation temperature (default 0.3)
+    Reads config from .env (local) or Streamlit secrets (cloud):
+      ICA_API_KEY     — Bearer token
+      ICA_BASE_URL    — Base URL (no trailing slash)
+      ICA_MODEL       — Model identifier
+      ICA_MAX_TOKENS  — Max output tokens (default 8192)
+      ICA_TEMPERATURE — Must be 1.0 for ICA Codex models
     """
 
     def __init__(self):
-        # Support both old-style ICA_API_BASE_URL and new ICA_BASE_URL
         self.api_base_url = (
-            os.getenv("ICA_BASE_URL")
-            or os.getenv("ICA_API_BASE_URL", "https://api.nextgen-beta.ica.ibm.com/ica/v1")
+            _get_config("ICA_BASE_URL")
+            or _get_config("ICA_API_BASE_URL", "https://api.nextgen-beta.ica.ibm.com/ica/v1")
         ).rstrip("/")
 
-        self.api_key = os.getenv("ICA_API_KEY", "")
+        self.api_key = _get_config("ICA_API_KEY", "")
 
-        # Support both ICA_MODEL and legacy ICA_MODEL_ID
-        # Default: gpt-5.5-gus — best available model for ICA Codex keys.
-        # Claude/Bedrock models (claude-sonnet-*) are unavailable on Codex keys.
-        # gpt-5.5-gus produces sharper marketing copy than gpt-4o for complex tasks.
+        # gpt-5.5-gus: best model available on ICA Codex keys for complex analysis
+        # Claude/Bedrock models return 403 with Codex keys — do not use them
         self.model_id = (
-            os.getenv("ICA_MODEL")
-            or os.getenv("ICA_MODEL_ID", "gpt-5.5-gus")
+            _get_config("ICA_MODEL")
+            or _get_config("ICA_MODEL_ID", "gpt-5.5-gus")
         )
 
-        self.max_tokens = int(os.getenv("ICA_MAX_TOKENS", "8192"))
-        # ICA Codex models require temperature=1.0 — 0.3 returns a 400 error
-        self.temperature = float(os.getenv("ICA_TEMPERATURE", "1.0"))
+        self.max_tokens = int(_get_config("ICA_MAX_TOKENS", "8192"))
+        # ICA Codex models REQUIRE temperature=1.0 — any other value returns HTTP 400
+        self.temperature = float(_get_config("ICA_TEMPERATURE", "1.0"))
 
         self._session = requests.Session()
-        if os.getenv("HTTPS_PROXY"):
+        proxy = _get_config("HTTPS_PROXY")
+        if proxy:
             self._session.proxies = {
-                "https": os.getenv("HTTPS_PROXY"),
-                "http": os.getenv("HTTP_PROXY", os.getenv("HTTPS_PROXY")),
+                "https": proxy,
+                "http": _get_config("HTTP_PROXY", proxy),
             }
 
     @property
