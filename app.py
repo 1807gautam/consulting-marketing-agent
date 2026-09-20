@@ -188,7 +188,7 @@ with st.sidebar:
 
     client = get_client()
     if client.is_configured:
-        st.success("✅ ICA API connected")
+        st.success("✅ ICA API key is set")
         st.caption(f"Model: `{client.model_id}`")
     else:
         st.error("❌ ICA API key not set")
@@ -196,6 +196,43 @@ with st.sidebar:
             "Add your key to `.env` or Streamlit secrets:\n"
             "```\nICA_API_KEY=your_key_here\n```"
         )
+
+    if st.button("🔌 Test API connection", use_container_width=True):
+        with st.spinner("Testing…"):
+            try:
+                import requests as _req
+                _ep = f"{client.api_base_url}/chat/completions"
+                _r = _req.post(
+                    _ep,
+                    json={
+                        "model": client.model_id,
+                        "messages": [
+                            {"role": "system", "content": "You are a helpful assistant."},
+                            {"role": "user", "content": "Reply with exactly: OK"},
+                        ],
+                        "max_tokens": 10,
+                        "temperature": 0.0,
+                    },
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {client.api_key}",
+                    },
+                    timeout=30,
+                )
+                if _r.status_code == 200:
+                    st.success("✅ API connection OK — key is valid!")
+                elif _r.status_code == 403:
+                    st.error(
+                        "⛔ 403 Forbidden — API key has **expired or is invalid**.\n\n"
+                        "Get a new key at [nextgen-beta.ica.ibm.com](https://nextgen-beta.ica.ibm.com) "
+                        "and update `ICA_API_KEY` in your `.env` file."
+                    )
+                elif _r.status_code == 401:
+                    st.error("⛔ 401 Unauthorised — API key is missing or malformed.")
+                else:
+                    st.warning(f"⚠️ Unexpected status {_r.status_code}: {_r.text[:300]}")
+            except Exception as _e:
+                st.error(f"❌ Connection test failed: {_e}")
 
     st.markdown("---")
     st.markdown("## 📋 Progress")

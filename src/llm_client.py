@@ -113,12 +113,28 @@ class ICAClient:
                 body = e.response.text[:1000] if e.response else "(no response body)"
             except Exception:
                 body = "(could not read response body)"
-            raise RuntimeError(
-                f"ICA API HTTP error {status}.\n"
-                f"Endpoint: {endpoint}\n"
-                f"Model: {self.model_id}\n"
-                f"Response body: {body}"
-            )
+
+            # Give a human-readable hint for the most common errors
+            if status == 401:
+                hint = "⛔ 401 Unauthorised — your ICA API key is missing or malformed."
+            elif status == 403:
+                hint = (
+                    "⛔ 403 Forbidden — your ICA API key has EXPIRED or is invalid.\n"
+                    "Action: generate a new key at https://nextgen-beta.ica.ibm.com "
+                    "and update ICA_API_KEY in your .env file (local) or Streamlit secrets (cloud)."
+                )
+            elif status == 429:
+                hint = "⛔ 429 Rate limited — too many requests. Wait a minute and try again."
+            elif status == 413:
+                hint = "⛔ 413 Payload too large — reduce the number or size of uploaded files."
+            else:
+                hint = ""
+
+            msg = f"ICA API HTTP {status} error."
+            if hint:
+                msg += f"\n{hint}"
+            msg += f"\nEndpoint: {endpoint}\nModel: {self.model_id}\nAPI response: {body}"
+            raise RuntimeError(msg)
         except requests.exceptions.RequestException as e:
             raise RuntimeError(f"Network error contacting ICA API: {str(e)}")
 
