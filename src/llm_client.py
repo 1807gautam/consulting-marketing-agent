@@ -34,13 +34,17 @@ class ICAClient:
         self.api_key = os.getenv("ICA_API_KEY", "")
 
         # Support both ICA_MODEL and legacy ICA_MODEL_ID
+        # Default: gpt-5.5-gus — best available model for ICA Codex keys.
+        # Claude/Bedrock models (claude-sonnet-*) are unavailable on Codex keys.
+        # gpt-5.5-gus produces sharper marketing copy than gpt-4o for complex tasks.
         self.model_id = (
             os.getenv("ICA_MODEL")
-            or os.getenv("ICA_MODEL_ID", "claude-sonnet-4-5")
+            or os.getenv("ICA_MODEL_ID", "gpt-5.5-gus")
         )
 
         self.max_tokens = int(os.getenv("ICA_MAX_TOKENS", "8192"))
-        self.temperature = float(os.getenv("ICA_TEMPERATURE", "0.3"))
+        # ICA Codex models require temperature=1.0 — 0.3 returns a 400 error
+        self.temperature = float(os.getenv("ICA_TEMPERATURE", "1.0"))
 
         self._session = requests.Session()
         if os.getenv("HTTPS_PROXY"):
