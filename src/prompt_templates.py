@@ -1,5 +1,5 @@
 """
-Prompt templates for all 9 dashboard tabs and the final summary.
+Prompt templates for all dashboard tabs and the final summary.
 Each template function returns (system_prompt, user_prompt).
 """
 
@@ -71,6 +71,7 @@ For EACH of the 4 blogs provide:
 **Synopsis:** 3–4 sentences explaining the angle, why it matters now, and what the reader will take away.
 **Target audience:** specific job title(s) or role(s)
 **Key message:** the single most important point the blog makes
+**Narrative axis:** which tension does the blog resolve? (e.g. "Data vs. AI-ready Data", "Migration vs. Transformation", "Governance as control vs. Governance as enablement", "Pilot vs. Production-grade AI") — select or adapt based on the sources.
 **Supporting data points:** 3 bullet points — cite source file + page/section for each. Only use data found in the uploaded documents.
 **IBM Consulting angle:** 2–3 sentences on how IBM Consulting is relevant to this topic
 **Call to action:** one clear next step for the reader
@@ -237,10 +238,19 @@ Summary table first:
 Then for each trend:
 **Trend [#]: [Name]**
 **What it means:** 2–3 sentences in this industry context.
-**APAC / regional relevance:** 1–2 sentences specific to the selected geography.
+**APAC / regional relevance:** 1–2 sentences specific to the selected geography. Where available, include sub-region specifics (ASEAN, ANZ, India, Japan, Greater China, South Korea).
 **Client implication:** 2–3 sentences on what this means for IBM Consulting's clients.
 **IBM Consulting marketing implication:** 1–2 sentences on how IBM should respond or position.
 **Evidence:** cite source file + page/section.
+
+SECTION D — ANALYST INTELLIGENCE TABLE
+Summarise the key analyst signals from the uploaded sources:
+
+| Analyst / Research | Key Signal | Market Implication | IBM White Space |
+|---|---|---|---|
+(4–6 rows — only include rows supported by the uploaded sources)
+
+If no analyst reports are present in the uploaded sources, write: "Analyst intelligence table: Not found in uploaded sources — recommend uploading analyst reports for this section."
 """
     return system, user
 
@@ -261,21 +271,36 @@ TASK — TAB 8: COMPETITIVE INTELLIGENCE
 PART A — COMPETITOR ANALYSIS
 Only analyse competitors mentioned in the uploaded sources or directly relevant to this transformation priority and industry.
 
-For each competitor:
+For each competitor produce the following block:
 
 **Competitor:** [name]
-**Positioning:** 1–2 sentences on how they position in this space.
+**Core narrative / positioning:** 1–2 sentences on how they lead the conversation in this space.
+**Primary buyer:** the key decision-maker they target
+**Content & GTM pattern:** how they go to market — partnerships, research, events, developer content, etc. (1–2 sentences)
 **Key strengths:** 2–3 bullets (evidenced by sources only)
-**Potential gaps:** 1–2 bullets (evidenced by sources — do not speculate)
-**Threat level to IBM Consulting:** High / Medium / Low
+**Potential gaps vs. IBM:** 1–2 bullets (evidenced by sources — do not speculate)
+**Threat level to IBM Consulting:** High / Medium / Low — with one sentence justification
 **Source:** cite file + section
 
 Separate each competitor with (---).
 
 PART B — IBM CONSULTING POSITIONING RECOMMENDATIONS
-- **Top differentiation themes** (3 bullets): what IBM Consulting can credibly claim that others cannot
-- **White-space opportunities** (2–3 bullets): areas where competitors are weak or absent
-- **Suggested competitive messages** (2–3 bullets): what IBM Consulting should say in market
+
+**Top differentiation themes** (3 bullets): what IBM Consulting can credibly claim that others cannot — based on the evidence.
+
+**White-space opportunities** (3–4 bullets): areas where competitors are absent, weak, or silent — reference the competitor analysis above.
+
+**Suggested competitive messages** (2–3 bullets): specific sentences IBM Consulting should use in market.
+
+**Narrative axes for IBM** (based on the sources and competitor gaps):
+List 3–5 tension pairs that IBM's messaging should resolve — e.g.:
+- "Data vs. AI-ready Data"
+- "Governance as compliance vs. Governance as AI enablement"
+- "Migration vs. Transformation"
+- "Pilots vs. Production-grade AI"
+(Adapt these axes to reflect actual evidence in the uploaded sources — do not copy examples verbatim unless the sources support them.)
+
+**Claims requiring internal validation** (2–3 bullets): statements that are directionally correct but need IBM confirmation before going to market.
 
 Use neutral, professional, fact-based language. Do not speculate about competitor strategy, financials, or customer relationships.
 """
@@ -336,44 +361,93 @@ Label: ⚠️ DRAFT — requires IBM editorial, legal, and brand review.
 # ─────────────────────────────────────────────
 # FINAL SUMMARY
 # ─────────────────────────────────────────────
+def _summarise_tab(tab_name: str, content: str) -> str:
+    """
+    Produce a compact bullet-point distillation of a single tab's output.
+    Keeps the final summary prompt well within token limits.
+    Target: ≤ 600 chars per tab → 7 tabs × 600 = 4,200 chars max for all tab summaries.
+    """
+    if not content or content.startswith("❌"):
+        return f"{tab_name}: [not generated]"
+
+    lines = [ln.strip() for ln in content.split("\n") if ln.strip()]
+    # Prefer lines that start with ** (structured output) or contain a number
+    priority_lines = [
+        ln for ln in lines
+        if ln.startswith("**") or any(ch.isdigit() for ch in ln[:60])
+    ]
+    candidate_lines = priority_lines if priority_lines else lines
+    # Build a compact summary up to 600 chars
+    summary_parts = [f"{tab_name}:"]
+    char_count = len(summary_parts[0])
+    for ln in candidate_lines:
+        # Strip markdown bold markers for compactness
+        clean = ln.replace("**", "").strip()
+        if not clean or clean == "---":
+            continue
+        addition = f"\n- {clean[:120]}"
+        if char_count + len(addition) > 600:
+            break
+        summary_parts.append(addition)
+        char_count += len(addition)
+
+    return "".join(summary_parts)
+
+
 def final_summary(transformation_priority, industry, geography, all_tab_outputs: dict):
+    """
+    Build the final summary prompt.
+    Uses a compact per-tab digest (~600 chars each) instead of raw 2,500-char
+    slices — keeps total prompt well within the API's context window.
+    """
     system = SYSTEM_PROMPT_BASE
-    tabs_text = "\n\n".join(
-        f"=== {tab_name} ===\n{content[:2500]}"
+
+    # Compact digest of every tab
+    tab_digests = "\n\n".join(
+        _summarise_tab(tab_name, content)
         for tab_name, content in all_tab_outputs.items()
+        if tab_name != "Final Summary"   # avoid self-reference
     )
+
     user = f"""
 === CONTEXT ===
 Transformation Priority: {transformation_priority}
 Industry: {industry}
 Geography: {geography}
 
-=== DASHBOARD OUTPUTS ===
-{tabs_text}
+=== DASHBOARD DIGEST ===
+(Compact summary of all dashboard tabs — use these as the evidence base for the summary below.)
+
+{tab_digests}
+
+=== END DIGEST ===
 
 TASK — FINAL DASHBOARD SUMMARY
 
 Synthesise the dashboard into a concise, action-oriented executive summary.
+Every item must be traceable to the dashboard tabs above — cite the tab name in brackets.
 
-**TOP 5 STRATEGIC OPPORTUNITIES**
-One sentence each. Include the tab it comes from in brackets.
+---
 
-**TOP 5 COMPETITIVE CONSIDERATIONS**
+## TOP 5 STRATEGIC OPPORTUNITIES
+One sentence each. Format: Opportunity — [Tab name]
+
+## TOP 5 COMPETITIVE CONSIDERATIONS
 One sentence each. Include the competitor name in brackets where relevant.
 
-**TOP 5 RECOMMENDED MARKETING ACTIONS**
-Format: Action — Owner Role — Timing
+## TOP 5 RECOMMENDED MARKETING ACTIONS
+Format: Action — Owner Role — Timing — [Tab name]
 
-**TOP 5 CAMPAIGN IDEAS**
+## TOP 5 CAMPAIGN IDEAS
 Format: Campaign name — Format — Target audience — Core message
 
-**TOP 5 EXECUTIVE TALKING POINTS**
-Stat-led, board/C-suite ready. One sentence each.
+## TOP 5 EXECUTIVE TALKING POINTS
+Stat-led, board/C-suite ready. One sentence each. Cite source in brackets.
 
-**KEY EVIDENCE GAPS**
+## KEY EVIDENCE GAPS
 3–4 bullets: what information is missing and what research would address it.
 
-**RECOMMENDED NEXT STEPS**
+## RECOMMENDED NEXT STEPS FOR THE IBM CONSULTING MARKETING TEAM
 5 prioritised actions with owner role and suggested timing.
 """
     return system, user

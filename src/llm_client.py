@@ -86,7 +86,7 @@ class ICAClient:
                 endpoint,
                 json=payload,
                 headers=headers,
-                timeout=240,   # 4 min — large documents need time
+                timeout=300,   # 5 min — large documents need time
             )
             response.raise_for_status()
             data = response.json()
@@ -103,13 +103,22 @@ class ICAClient:
 
         except requests.exceptions.Timeout:
             raise RuntimeError(
-                "Request timed out after 4 minutes. "
+                "Request timed out after 5 minutes. "
                 "Try uploading smaller files or splitting the analysis."
             )
         except requests.exceptions.HTTPError as e:
             status = e.response.status_code if e.response else "unknown"
-            body = e.response.text[:500] if e.response else ""
-            raise RuntimeError(f"ICA API HTTP error {status}: {body}")
+            # Capture full error body for diagnosis (truncated to 1,000 chars)
+            try:
+                body = e.response.text[:1000] if e.response else "(no response body)"
+            except Exception:
+                body = "(could not read response body)"
+            raise RuntimeError(
+                f"ICA API HTTP error {status}.\n"
+                f"Endpoint: {endpoint}\n"
+                f"Model: {self.model_id}\n"
+                f"Response body: {body}"
+            )
         except requests.exceptions.RequestException as e:
             raise RuntimeError(f"Network error contacting ICA API: {str(e)}")
 

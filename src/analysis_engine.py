@@ -85,16 +85,23 @@ def run_full_analysis(
         )
         results[tab_name] = result
 
-    # Final summary
+    # Final summary — uses compact tab digests, so a lower max_tokens is fine
     if progress_callback:
         progress_callback((total - 1) / total, "Generating final summary...")
 
     try:
         client = get_client()
         sys_p, usr_p = pt.final_summary(transformation_priority, industry, geography, results)
-        summary = client.chat(sys_p, usr_p)
+        # 4096 tokens is ample for a structured summary; avoids hitting context limits
+        summary = client.chat(sys_p, usr_p, max_tokens=4096)
     except Exception as e:
-        summary = f"❌ Final summary generation failed: {str(e)}"
+        summary = (
+            f"❌ Final summary generation failed: {str(e)}\n\n"
+            "**Tip:** If you see an HTTP 400/413 error, the combined dashboard output may be "
+            "too large for the API. Try running with fewer or smaller uploaded files.\n\n"
+            "**What you can still do:** Each individual tab above contains the full analysis — "
+            "the Final Summary is an optional synthesis layer."
+        )
 
     results["Final Summary"] = summary
 
