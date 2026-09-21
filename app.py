@@ -211,7 +211,7 @@ with st.sidebar:
                             {"role": "user", "content": "Reply with exactly: OK"},
                         ],
                         "max_tokens": 10,
-                        "temperature": 0.0,
+                        "temperature": 1.0,
                     },
                     headers={
                         "Content-Type": "application/json",
